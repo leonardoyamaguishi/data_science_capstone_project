@@ -1,4 +1,4 @@
-# Importing relevant liberaries for EDA
+# Importing relevant libraries for EDA
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -14,6 +14,8 @@ from nltk.tokenize import word_tokenize
 from nltk.tokenize import sent_tokenize
 from nltk.stem import WordNetLemmatizer
 from nltk.corpus import stopwords
+
+from datetime import datetime
 
 import haversine as hs
 
@@ -326,6 +328,48 @@ def standardize_boolean_columns(txt):
     else: # Cases f (False) and nan
         return 0
 
+def compute_days_since_start(df, timecol_before, timecol_after, delta_col_name, drop_original):
+    '''
+    INPUTS:
+    df - (DataFrame) with 2 columns with dates in string format (%Y-%m-%d)
+    timecol_before - (string) older dates column name
+    timecol_after -  (string) newer dates column name
+    delta_col_name - (string) name of the column with the calculated time difference
+    drop_original - (boolean) if the original time columns must be dropped
+    
+    OUTPUTS:
+    df - (DataFrame) with a column named delta_col_name with the days between the two given date columns
+
+    '''
+    
+    # Converting the dates in string format to timestamp
+    df = time_converter(df, timecol_before)
+    df = time_converter(df, timecol_after)
+    
+    # Creating a list to store the time subtractions
+    days_since = []
+    
+    # Loops through the time columns 
+    for date_before, date_after in zip(df[timecol_before], df[timecol_after]):
+        
+        # Calculates the difference if the elements are timestamps
+        if type(date_before) == pd._libs.tslibs.timestamps.Timestamp and type(date_after) == pd._libs.tslibs.timestamps.Timestamp:
+            days_since.append((date_after - date_before).days)
+        
+        # Else nan is appended
+        else:
+            days_since.append(np.nan)
+    
+    # Dropping the original time columns
+    if drop_original == True:
+        df.drop([timecol_before], axis = 1, inplace = True)
+        df.drop([timecol_after], axis = 1, inplace = True)
+    
+    # Appending the difference column
+    df[delta_col_name] = days_since
+    
+    return df
+    
 '''
 Functions for general data processing
 '''
@@ -338,3 +382,29 @@ def standardize_names(txt):
     '''
     return str(txt.lower().replace(' ', ''))
 
+def time_converter(df, time_str_column):
+    """
+    INPUT:
+    df - DataFrame that contains a column with time strings, this column must nost contain nan values.
+    time_str_column - name of the column with the time strings.
+    
+    This function converts the time strings in a given column using the strptime function from the datetime library.
+    By doing this, a new column with the converted elements will be created and the old column will be dropped.
+    
+    OUTPUT:
+    df - DataFrame with a new converted column with the "con_" prefix.
+    
+    """
+    converted_time = []
+    new_column_name = time_str_column   
+    
+    for time in df[time_str_column]:
+        if type(time) == str:
+            converted_time.append(datetime.strptime(str(time), "%Y-%m-%d"))
+        else:
+            converted_time.append(np.nan)
+            
+    df = df.drop(time_str_column, axis = 1)
+    df[new_column_name] = converted_time
+    
+    return df
