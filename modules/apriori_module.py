@@ -20,40 +20,36 @@ def count_tokens(itemset):
 
     return token_count    
 
-def list_relevant_columns(df, frequent_sets):
+def list_relevant_columns(frequent_sets):
     '''
     INPUTS:
-    df - (DataFrame) in which the most frequest items subsets (columns) will be listed
     frequent_sets - (dict) of (sets) of (frozensets) of items
     OUTPUTS:
     relevant_columns - (list) of the columns with the most common elements
     '''
-    active_sets = []
+    relevant_columns = []
 
     for item_set in frequent_sets[1]:
         for item in item_set:
-            active_sets.append(item)
-            
-    relevant_columns = []
-
-    for col in df.columns:
-        if col in active_sets:
-            relevant_columns.append(col)
+            relevant_columns.append(item)
             
     return relevant_columns
 
-def ratio_of_true_values(df, relevant_columns):
+def ratio_of_true_values_single_values(df, freqItemSet):
     '''
     INPUTS:
-    df - (DataFrame) in which the true values (1) will be summed
-    relevant_columns - (list) of columns with the relevant items
+    freqItemSet - item sets that meet the minsup requirement
+    relevant_columns - (list) of columns with the relevant single values
     DESCRIPTION:
     This function is to determine how active the columns filetred by the apriori algorithm are
     OUTPUTS:
-    ratio_of_true_values - average of the ratio of true values per column
+    ratio_of_true_values - (float) average of the ratio of true values per column
     '''
     # Given the definition of the apriori algorithm, only the single element subsets are enough
     # for this calculation
+
+    relevant_columns = list_relevant_columns(freqItemSet)
+
     ratio_of_true_values = (df[relevant_columns].sum(axis = 0)/df.shape[0]).mean()
     
     return ratio_of_true_values
@@ -67,16 +63,17 @@ def evaluate_apriori_sets(df, list_of_subsets, minsup, minconf):
     minconf - the minimum probability for an item combination to have its populatity evaluated
     OUTPUTS: 
     freqItemSet - item sets that meet the minsup requirement
-    activation_index - (float) the ratio of true values per columns in the dataset from the strings selected by the
+    activation_index_single_items - (float) the ratio of true values per columns in the dataset from the strings selected by the
     apriori algorithm
+    activation_index_pairs - (float) average of the ratio of true values per column
     '''
     freqItemSet, rules = apriori(list_of_subsets, minsup, minconf)
+   
+    activation_index_single_items = ratio_of_true_values_single_values(df, freqItemSet)
     
-    relevant_columns = list_relevant_columns(df, freqItemSet)
-    
-    activation_index = ratio_of_true_values(df, relevant_columns)
-    
-    return freqItemSet, activation_index
+    activation_index_pairs = ratio_of_true_values_pair(df,freqItemSet)
+
+    return freqItemSet, activation_index_single_items, activation_index_pairs
 
 def create_item_set(df):
     ''''
@@ -117,3 +114,68 @@ def apriori_data_processing(df, minsup, minconf):
     
     filtered_df = df[relevant_columns]
     return filtered_df
+
+def list_relevant_pairs(frequent_sets):
+    '''
+    INPUTS:
+    frequent_sets - (dict) of (sets) of (frozensets) of items
+    OUTPUTS:
+    relevant_pairs - (list) of the columns with the most common elements
+    '''
+    
+    pair_list = []
+
+    for subset in frequent_sets[2]:
+
+        pair = []
+        
+        for item in subset:
+            pair.append(item)
+        
+        pair_list.append(pair)
+
+    return pair_list
+
+def ratio_of_true_values_pair(df, frequent_sets):
+    ''''
+    INPUTS:
+    df - (DataFrame) in which the most frequent active pairs will be measured
+    frequent_sets - (dict) in which the pairs (key = 2) will be evaluated
+    OUTPUTS:
+    ratio_of_true_values - (float) average of the ratio of true values per column
+    '''
+    try: 
+
+        pair_list = list_relevant_pairs(frequent_sets)
+
+        activation_ratios = []
+
+        for pair in pair_list:
+            activation_ratios.append((df[pair].sum(axis = 1) == 2).sum()/df.shape[0])
+
+        activation_ratios = pd.Series(activation_ratios)
+
+        ratio_of_true_values = activation_ratios.mean()
+        
+        return ratio_of_true_values
+
+    except:
+
+        return 0
+
+def plot_activation_index(tested_values, single_item_activation_list, item_pair_activation_list):
+    ''''
+    INPUTS:
+    tested_values - (list) of iterated values (x) for the plot
+    single_item_activation_list - (list) list of the activation ratios for single items
+    item_pair_activation_list - (list) list of the activation ratios for item pairs
+    OUTPUTS:
+    None
+    '''
+
+    plt = sns.lineplot()
+    plt.plot(tested_values, single_item_activation_list, color='r', label= 'single item activation')
+    plt.plot(tested_values, item_pair_activation_list, color='b', label= 'item pair activation')
+    plt.legend()
+
+    return 
