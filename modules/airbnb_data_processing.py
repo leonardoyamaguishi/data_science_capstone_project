@@ -408,3 +408,88 @@ def time_converter(df, time_str_column):
     df[new_column_name] = converted_time
     
     return df
+
+def host_response_time_encoder(value):
+    '''
+    INPUTS:
+    value - (string) with four possible alternatives 
+    {'a few days or more', 'within a day', 'within a few hours', 'within an hour'}
+    OUTPUTS:
+    (int) - ordinal encoding according to the value
+    '''
+    if value == 'within an hour':
+        return 1
+    elif value == 'within a few hours':
+        return 2
+    elif value == 'within a day':
+        return 3
+    elif value == 'a few days or more':
+        return 4
+    else:
+        return np.nan
+
+def host_response_rate_converter(value):
+    '''
+    INPUTS:
+    value - (string) of a percentual value
+    OUTPUTS:
+    (float) of the percentual value converted to a ratio with 1 as a denominator
+    '''
+    try:
+        return float(value[0:len(value) - 1])/100
+    except:
+        return np.nan
+
+def encode_room_type(df):
+    '''
+    INPUTS:
+    df - (DataFrame) with room_type string column
+    OUTPUTS:
+    df - with One Hot Encoded values for the room_type values, nan for nans and dropped room_type column 
+    '''
+    # Declaring lists to store the One Hot Encoded Values
+    entire_home_apt_list = [0]*len(df)
+    hotel_room_list = [0]*len(df)
+    private_room_list = [0]*len(df)
+    shared_room_list = [0]*len(df)
+    
+    for index, value in enumerate(df.room_type):
+        if value == 'Entire home/apt':
+            entire_home_apt_list[index] = 1
+        elif value == 'Hotel room':
+            hotel_room_list[index] = 1
+        elif value == 'Private room':
+            private_room_list[index] = 1
+        elif value == 'Shared room':
+            shared_room_list[index] = 1
+        else:
+            entire_home_apt_list[index] = np.nan
+            hotel_room_list[index] = np.nan
+            private_room_list[index] = np.nan
+            shared_room_list[index] = np.nan
+        
+    df['entire_home_apt'] = entire_home_apt_list
+    df['hotel_room'] = hotel_room_list
+    df['private_room'] = private_room_list
+    df['shared_room'] = shared_room_list
+    
+    df.drop(['room_type'], axis = 1, inplace = True)
+    
+    return df
+
+def price_converter(value):
+    '''
+    INPUTS:
+    value - (string) with ther listing price
+    OUTPUTS:
+    float with the converted value
+    '''
+    # Replacing ',' and ' ' and '$' text
+    value = value.replace(',', '')
+    value = value.replace('$', '')
+    value = value.replace(' ', '')
+    
+    try: 
+        return float(value)
+    except:
+        return np.nan
