@@ -7,22 +7,6 @@ import scipy
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# Modules created based on the EDA and ETL steps
-from modelling_support import prioritize_and_drop_redundant_columns
-from modelling_support import above_median_metric
-
-# Libraries for Data Mining
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import cross_validate
-
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.tree import DecisionTreeClassifier
-
-# Model evaluation libraries
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
-
 def evaluate_features(df, y_predicted, feature_importance_series):
     '''
     INPUTS:
@@ -61,7 +45,7 @@ def evaluate_classification(y_real, y_prediction):
     '''
     
     acc = accuracy_score(y_real, y_prediction)
-    print('Train dataset accuracy: {}'.format(acc))
+    print('Model accuracy: {}'.format(acc))
     
     actual_balance = y_real.sum()/y_real.shape[0]
     print('Actual ratio of positive classifications: {}'.format(actual_balance))
